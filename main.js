@@ -1,60 +1,73 @@
-//constructor for Person
-function Person(person) {
-    this.id = person.id;
-    this.firstname = person.firstname;
-    this.lastname = person.lastname;
-    this.age = person.age;
-    this.likes = [];
-    for (let book in person.likes){
-        this.likes.push(new Book(person.likes[book]));
-    }
-}
-
-//constructor for book
-function Book(book) {
-    this.id = book.id;
-    this.title = book.title;
-    this.author = book.author[0].id;
-    this.publisher = [];
-    for (let publisher in book.publisher) {
-        this.publisher.push(new Publisher(book.publisher[publisher]));
-    }
-}
-
-//constructor for Publisher
-function Publisher(publisher) {
-    this.id = publisher.id;
-    this.name = publisher.name;
-}
-
 window.onload = function () {
     setConfig('http://samples.databoom.space/api1/sampledb/collections');
-    getData();
+    document.getElementById("getBtn").addEventListener("click", getData);
+
 };
 
 function setConfig(path) {
     o().config({
         endpoint: path,
+        format: JSON,
+        withCredentials: true
     });
+}
+
+function setFilter() {
+    let firstname = document.getElementById("firstname").value;
+    let lastname = document.getElementById("lastname").value;
+    let age = document.getElementById("age").value;
+
+    let filter = "";
+    if (firstname !== ""){
+        if (filter !== "")
+            filter += " and ";
+        filter += `firstname eq \'${firstname}\'`
+    }
+    if (lastname !== ""){
+        if (filter !== "")
+            filter += " and ";
+        filter += `lastname eq '${lastname}'`
+    }
+    if (age !== ""){
+        if (filter !== "")
+            filter += " and ";
+        filter += `age eq ${age}`;
+    }
+
+    return filter;
 }
 
 let personList = [];
 function getData() {
-    o('persons').expand('likes').expand('likes/publisher').get(function(data) {
-        for (let i = 0; i < data.d.results.length; i++){
-            personList.push(new Person(data.d.results[i]));
-        }
+    let filter = setFilter();
+    if (filter !== "") {
+        personList = [];
+        o('persons').filter(filter).expand('likes').expand('likes/publisher').get(function (data) {
+            for (let i = 0; i < data.d.results.length; i++) {
+                personList.push(new Person(data.d.results[i]));
+            }
+            displayData();
+        });
+    }
+    else {
+        personList = [];
+        o('persons').expand('likes').expand('likes/publisher').get(function(data) {
+            for (let i = 0; i < data.d.results.length; i++){
+                personList.push(new Person(data.d.results[i]));
+            }
 
-        displayData();
-    });
+            displayData();
+        });
+    }
 }
 
 function displayData() {
     if (personList !== undefined){
+        document.getElementById("data").innerHTML = "";
         if (personList.length === 1)
-            document.body.appendChild(toForm(personList[0]));
+            document.getElementById("data").appendChild(toForm(personList[0]));
         else
-            document.body.appendChild(toGrid(personList));
+            document.getElementById("data").appendChild(toGrid(personList));
     }
 }
 
@@ -72,13 +85,33 @@ function toGrid(list) {
 
 function toForm(elem) {
     let form = document.createElement('form');
+    form.id = "resultForm";
 
     for (let key in elem) {
         form.appendChild(createLabel(key));
-        form.appendChild(createInput(elem[key], true));
+        if (Array.isArray(elem[key])){
+            for (let obj in elem[key]){
+                form.appendChild(createInput(key, objToString(elem[key][obj]), false));
+            }
+        }
+        else
+            form.appendChild(createInput(key, elem[key], false));
     }
 
+    form.appendChild(createButton("putBtn", "Put"));
+
     return form;
+}
+
+function objToString(obj) {
+    let result = "";
+    for (let key in obj){
+        if (typeof obj[key] === "object")
+            result += `${key} : ${objToString(obj[key])}`;
+        else
+            result +=  `${key}: ${obj[key]}, `;
+    }
+    return result.slice(0, -2);
 }
 
 function createLabel(key) {
@@ -87,14 +120,15 @@ function createLabel(key) {
     return label;
 }
 
-function createInput(elem, disabled) {
-    let input = document.createElement('input');
-    input.setAttribute('type', "text");
-    input.setAttribute('placeholder', key + "..");
-    input.value = elem;
-    input.disabled = disabled;
-    return input;
-}
+// function createInput(elem, disabled) {
+//     let input = document.createElement('input');
+//     input.setAttribute('type', "text");
+//     input.setAttribute('placeholder', key + "..");
+//     input.value = elem;
+//     input.disabled = disabled;
+//     input.id = key + "Result";
+//     return input;
+// }
 
 function createHeadRow(elem) {
     let row = document.createElement('tr');
@@ -109,32 +143,24 @@ function createHeadRow(elem) {
 
 function createRow(elem) {
     let row = document.createElement('tr');
+
     for (let key in elem) {
         let cell = document.createElement('td');
+
         if (Array.isArray(elem[key]))
-            cell.appendChild(arrayToGrid(elem[key]));
+            cell.appendChild(toGrid(elem[key]));
+        else if (typeof elem[key] === "object")
+            cell.appendChild(toGrid([elem[key]]));
         else
             cell.innerHTML = elem[key];
+
         row.appendChild(cell);
     }
+
     return row;
 }
 
-function arrayToGrid(list) {
-    let table = document.createElement('table');
-    table.appendChild(createHeadRow(list[0]));
 
-    for (let elem in list){
-        let row = document.createElement('tr');
-        for (let key in list[elem]){
-            let cell = document.createElement("td");
-            cell.innerHTML = list[elem][key];
-            row.appendChild(cell);
-        }
-        table.appendChild(row);
-    }
-    return table;
-}
 
 
 // POST, PUT, DELETE and PATCH is not working because we needed credentials: password and login...

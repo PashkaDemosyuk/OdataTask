@@ -3,10 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <title>Odata</title>
+    <script src="main.js"></script>
+    <script src="Constructor.js"></script>
+    <script src="./node_modules/odata/o.min.js"></script>
+    <link rel="stylesheet" href="style.css">
 </head>
-<body>
-<script src="main.js"></script>
-<script src="./node_modules/odata/o.min.js"></script>
-<link rel="stylesheet" href="style.css">
+<body >
+
+<div class="menu" style="width: 190px">
+    <form>
+    <label for="firstname">First Name</label><br>
+    <input type="text" id="firstname" name="firstname" placeholder="First Name..."><br>
+
+    <label for="lastname">Last Name</label><br>
+    <input type="text" id="lastname" name="lastname" placeholder="Last name..."><br>
+
+    <label for="age">Age</label><br>
+    <input type="text" id="age" name="age" placeholder="Age..."><br>
+
+        <input id="getBtn" type="button" value="Get">
+    </form>
+</div>
+
+<div class="data" id="data" style="margin-left: 220px;">
+
+</div>
+
 </body>
 </html>
